@@ -6,7 +6,3 @@ __pycache__/
 # Logs
 *.log
 
-
-# Archivos específicos de FastAPI/Starlette/Uvicorn
-*.pid
-*.ini
