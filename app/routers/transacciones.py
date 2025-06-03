@@ -5,7 +5,6 @@ from app.schemas.transaccion import Transaccion
 from bson import ObjectId 
 from datetime import datetime
 from dotenv import load_dotenv
-import asyncio
 import os
 
 
@@ -29,8 +28,6 @@ conf = ConnectionConfig(
     USE_CREDENTIALS=True,
     VALIDATE_CERTS=True
 )
-
-
 
 
 

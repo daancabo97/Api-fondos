@@ -24,3 +24,10 @@ async def obtener_sucursal(id: str):
     if not sucursal:
         raise HTTPException(status_code=404, detail="Sucursal no encontrada")
     return sucursal
+
+@router.delete("/sucursales/{id}")
+async def eliminar_sucursal(id: str):
+    result = sucursales_collection.delete_one({"_id": ObjectId(id)})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Sucursal no encontrada")
+    return {"message": "Sucursal eliminada correctamente"}
