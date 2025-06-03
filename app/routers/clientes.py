@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status, Depends, Body
 from app.database import clientes_collection
 from app.schemas.cliente import Cliente
 from bson import ObjectId
+
+from app.services.auth import verify_password, create_access_token
 
 router = APIRouter()
 
@@ -44,3 +46,13 @@ async def actualizar_saldo(id: str, nuevo_saldo: int):
     if resultado.modified_count == 0:
         raise HTTPException(status_code=404, detail="Cliente no encontrado o saldo no actualizado")
     return {"mensaje": "Saldo actualizado correctamente"}
+
+
+@router.post("/login")
+async def login(email: str = Body(...), password: str = Body(...)):
+    cliente = clientes_collection.find_one({"email": email})
+    if not cliente or not verify_password(password, cliente["password"]):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales incorrectas")
+    token = create_access_token({"sub": str(cliente["_id"]), "rol": cliente.get("rol", "cliente")})
+    return {"access_token": token, "token_type": "bearer"}
+

@@ -8,3 +8,4 @@ class Cliente(BaseModel):
     ciudad: str
     saldo: int = 500000
     email: Optional[EmailStr] = None
+    rol: str = "cliente"
