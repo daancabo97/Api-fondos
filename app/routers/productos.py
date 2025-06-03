@@ -25,7 +25,7 @@ async def crear_producto(producto: Producto):
 
 @router.delete("/productos/{producto_id}")
 async def eliminar_producto(producto_id: str):
-    result = productos_collection.delete_one({"_id": producto_id})
+    result = productos_collection.delete_one({"id": int(producto_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return {"message": "Producto eliminado correctamente"}

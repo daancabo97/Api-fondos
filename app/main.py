@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from dotenv import load_dotenv
 import os
 from app.config import db
-from app.routers import clientes, productos, inscripciones, sucursales, disponibilidad, visitan, transacciones
+from app.routers import clientes, productos, sucursales, disponibilidad, visitan, transacciones
 
 
 load_dotenv()
@@ -13,7 +13,6 @@ app = FastAPI()
 
 app.include_router(clientes.router)
 app.include_router(productos.router)
-app.include_router(inscripciones.router)
 app.include_router(sucursales.router)
 app.include_router(disponibilidad.router)
 app.include_router(visitan.router)
