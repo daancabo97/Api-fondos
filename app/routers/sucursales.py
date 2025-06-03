@@ -6,10 +6,16 @@ from bson import ObjectId
 router = APIRouter()
 
 
+def sucursal_serializer(sucursal):
+    sucursal["_id"] = str(sucursal["_id"])
+    return sucursal
+
+
 @router.get("/sucursales/")
 async def obtener_sucursales():
     sucursales = list(sucursales_collection.find())
-    return sucursales
+    sucursales_serializadas = [sucursal_serializer(s) for s in sucursales]
+    return sucursales_serializadas
 
 
 @router.post("/sucursales/")
@@ -20,10 +26,12 @@ async def crear_sucursal(sucursal: Sucursal):
 
 @router.get("/sucursales/{id}")
 async def obtener_sucursal(id: str):
-    sucursal = sucursales_collection.find_one({"_id": ObjectId(id)})
+    sucursal = sucursales_collection.find_one({"id": int(id)})
     if not sucursal:
         raise HTTPException(status_code=404, detail="Sucursal no encontrada")
+    sucursal["_id"] = str(sucursal["_id"])
     return sucursal
+
 
 @router.delete("/sucursales/{id}")
 async def eliminar_sucursal(id: str):
