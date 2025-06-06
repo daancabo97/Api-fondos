@@ -33,14 +33,27 @@ async def obtener_clientes():
 
 
 @router.post("/clientes/")
-async def crear_cliente(cliente: Cliente, password: str = Body(...)):
+async def crear_cliente(cliente: dict):
+    # Validar campos obligatorios
+    required_fields = ["nombre", "apellidos", "ciudad", "email", "password"]
+    for field in required_fields:
+        if field not in cliente:
+            raise HTTPException(status_code=422, detail=f"Falta el campo obligatorio: {field}")
     # Verificar email único
-    if clientes_collection.find_one({"email": cliente.email}):
+    if clientes_collection.find_one({"email": cliente["email"]}):
         raise HTTPException(status_code=400, detail="El email ya está registrado")
     # Validar password mínimo 8 caracteres
+    password = cliente["password"]
     if len(password) < 8:
         raise HTTPException(status_code=400, detail="El password debe tener al menos 8 caracteres")
-    cliente_dict = cliente.dict()
+    # Validar el resto de campos con el DTO
+    cliente_dto = Cliente(
+        nombre=cliente["nombre"],
+        apellidos=cliente["apellidos"],
+        ciudad=cliente["ciudad"],
+        email=cliente["email"]
+    )
+    cliente_dict = cliente_dto.dict()
     cliente_dict["password"] = get_password_hash(password)
     resultado = clientes_collection.insert_one(cliente_dict)
     cliente_dict["_id"] = str(resultado.inserted_id)

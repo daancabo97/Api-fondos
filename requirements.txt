@@ -4,3 +4,4 @@ pymongo
 pydantic
 pytest
 slowapi
+httpx
