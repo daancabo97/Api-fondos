@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.database import productos_collection
-from app.schemas.producto import Producto
+from app.schemas.producto_DTO import Producto
 from bson import ObjectId
 
 router = APIRouter()

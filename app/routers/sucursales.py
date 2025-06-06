@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.database import sucursales_collection
-from app.schemas.sucursal import Sucursal
+from app.schemas.sucursal_DTO import Sucursal
 from bson import ObjectId
 
 router = APIRouter()

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.database import disponibilidad_collection
-from app.schemas.disponibilidad import Disponibilidad
+from app.schemas.disponibilidad_DTO import Disponibilidad
 from bson import ObjectId
 
 router = APIRouter()

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.database import visitan_collection
-from app.schemas.visita import Visita
+from app.schemas.visita_DTO import Visita
 from bson import ObjectId
 
 router = APIRouter()

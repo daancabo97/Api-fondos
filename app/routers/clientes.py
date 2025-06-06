@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Body
 from app.database import clientes_collection
-from app.schemas.cliente import Cliente
+from app.schemas.cliente_DTO import Cliente
+from app.services.auth import get_password_hash
 from bson import ObjectId
 
 from app.services.auth import verify_password, create_access_token
@@ -24,8 +25,9 @@ async def obtener_clientes():
 
 
 @router.post("/clientes/")
-async def crear_cliente(cliente: Cliente):
+async def crear_cliente(cliente: Cliente, password: str = Body(...)):
     cliente_dict = cliente.dict()
+    cliente_dict["password"] = get_password_hash(password)
     resultado = clientes_collection.insert_one(cliente_dict)
     cliente_dict["_id"] = str(resultado.inserted_id)
     cliente_dict["id"] = str(resultado.inserted_id) 

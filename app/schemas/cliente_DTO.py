@@ -7,5 +7,5 @@ class Cliente(BaseModel):
     apellidos: str
     ciudad: str
     saldo: int = 500000
-    email: Optional[EmailStr] = None
+    email: [EmailStr] = None
     rol: str = "cliente"

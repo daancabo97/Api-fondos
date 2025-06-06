@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from app.database import clientes_collection, productos_collection, inscripciones_collection, transacciones_collection
-from app.schemas.transaccion import Transaccion
+from app.schemas.transaccion_DTO import Transaccion
 from bson import ObjectId 
 from datetime import datetime
 from dotenv import load_dotenv
