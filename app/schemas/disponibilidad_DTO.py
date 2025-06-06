@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
 class Disponibilidad(BaseModel):
-    idSucursal: str
-    idProducto: str
+    idSucursal: int
+    nombre: str
+    idProducto: int

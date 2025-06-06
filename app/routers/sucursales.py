@@ -26,7 +26,7 @@ async def crear_sucursal(sucursal: Sucursal):
 
 @router.get("/sucursales/{id}")
 async def obtener_sucursal(id: str):
-    sucursal = sucursales_collection.find_one({"id": int(id)})
+    sucursal = sucursales_collection.find_one({"_id": ObjectId(id)})
     if not sucursal:
         raise HTTPException(status_code=404, detail="Sucursal no encontrada")
     sucursal["_id"] = str(sucursal["_id"])
@@ -35,7 +35,7 @@ async def obtener_sucursal(id: str):
 
 @router.delete("/sucursales/{id}")
 async def eliminar_sucursal(id: str):
-    result = sucursales_collection.delete_one({"id": int(id)})
+    result = sucursales_collection.delete_one({"_id": ObjectId(id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Sucursal no encontrada")
     return {"message": "Sucursal eliminada correctamente"}
