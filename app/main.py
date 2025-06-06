@@ -20,5 +20,5 @@ app.include_router(transacciones.router)
 
 @app.get("/")
 async def root():
-    return {"mensaje": "API de Gestión de Fondos de BTG"}
+    return {"mensaje": "API de Gestión de Fondos 360"}
 

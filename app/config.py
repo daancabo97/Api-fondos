@@ -11,7 +11,6 @@ try:
     client = MongoClient("mongodb://localhost:27017")
     db = client["BTG"]
     print("Conexión exitosa a MongoDB")
-    print("Bases de datos disponibles:", client.list_database_names())
     print("Colecciones en la base de datos 'BTG':", db.list_collection_names())
 except Exception as e:
     print("Error al conectar a MongoDB:", e)

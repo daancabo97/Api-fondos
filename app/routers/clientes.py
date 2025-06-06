@@ -1,11 +1,16 @@
-from fastapi import APIRouter, HTTPException, status, Depends, Body
+from fastapi import APIRouter, HTTPException, status, Depends, Body, Request
 from app.database import clientes_collection
 from app.schemas.cliente_DTO import Cliente
-from app.services.auth import get_password_hash
+from app.services.auth import get_password_hash, verify_password, create_access_token, is_strong_password
 from bson import ObjectId
+from app.services.auth import is_token_revoked
 
-from app.services.auth import verify_password, create_access_token
+# --- Rate limiting ---
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter()
 
 
@@ -50,6 +55,14 @@ async def obtener_cliente(id: str):
     return cliente_serializer(cliente)
 
 
+@router.delete("/clientes{id}")
+async def eliminar_cliente(id: str):
+    resultado = clientes_collection.delete_one({"_id": ObjectId(id)})
+    if resultado.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    return {"mensaje": "Cliente eliminado correctamente"}
+
+
 @router.put("/clientes/{id}")
 async def actualizar_saldo(id: str, nuevo_saldo: int):
     resultado = clientes_collection.update_one({"_id": ObjectId(id)}, {"$set": {"saldo": nuevo_saldo}})
@@ -59,10 +72,23 @@ async def actualizar_saldo(id: str, nuevo_saldo: int):
 
 
 @router.post("/login")
-async def login(email: str = Body(...), password: str = Body(...)):
+@limiter.limit("5/minute")  # 5 intentos por minuto por IP
+async def login(request: Request, email: str = Body(...), password: str = Body(...)):
     cliente = clientes_collection.find_one({"email": email})
     if not cliente or not verify_password(password, cliente["password"]):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales incorrectas")
     token = create_access_token({"sub": str(cliente["_id"]), "rol": cliente.get("rol", "cliente")})
     return {"access_token": token, "token_type": "bearer"}
+
+
+# Endpoint para revocar token (logout)
+from app.database import db
+revoked_tokens_collection = db["revoked_tokens"]
+
+@router.post("/logout")
+async def logout(token: str = Depends(lambda: request.headers.get('authorization', '').replace('Bearer ', ''))):
+    if not token:
+        raise HTTPException(status_code=400, detail="Token no proporcionado")
+    revoked_tokens_collection.insert_one({"token": token})
+    return {"message": "Token revocado correctamente"}
 
