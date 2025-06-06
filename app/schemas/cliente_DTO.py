@@ -3,6 +3,7 @@ from typing import Optional
 import re
 
 class Cliente(BaseModel):
+    id: Optional[int] = None
     nombre: str
     apellidos: str
     ciudad: str

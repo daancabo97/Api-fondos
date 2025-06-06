@@ -29,3 +29,10 @@ async def eliminar_producto(producto_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
     return {"message": "Producto eliminado correctamente"}
+
+@router.get("/productos/{producto_id}")
+async def obtener_producto(producto_id: str):
+    producto = productos_collection.find_one({"id": int(producto_id)})
+    if not producto:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return producto_serializer(producto)

@@ -15,18 +15,19 @@ router = APIRouter()
 
 
 def cliente_serializer(cliente) -> dict:
-    """Convierte los ObjectId y limpia el campo _id. Elimina el password de la respuesta."""
-    cliente["id"] = str(cliente["_id"])
-    cliente["_id"] = str(cliente["_id"])
-    if "password" in cliente:
-        del cliente["password"]
-    del cliente["_id"]
-    return cliente
+    """Convierte los ObjectId y limpia el campo _id. Elimina el password de la respuesta. El id va primero."""
+    data = {}
+    data["id"] = str(cliente["_id"])
+    # Agregar el resto de los campos en el orden original, excepto _id y password
+    for k, v in cliente.items():
+        if k not in ("_id", "password"):
+            data[k] = v
+    return data
 
 
 @router.get("/clientes/")
 async def obtener_clientes():
-    clientes = list(clientes_collection.find())
+    clientes = list(clientes_collection.find().sort("_id", 1))  
     clientes_serializados = [cliente_serializer(cliente) for cliente in clientes]
     return clientes_serializados
 
