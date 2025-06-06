@@ -86,7 +86,8 @@ from app.database import db
 revoked_tokens_collection = db["revoked_tokens"]
 
 @router.post("/logout")
-async def logout(token: str = Depends(lambda: request.headers.get('authorization', '').replace('Bearer ', ''))):
+async def logout(request: Request):
+    token = request.headers.get('authorization', '').replace('Bearer ', '')
     if not token:
         raise HTTPException(status_code=400, detail="Token no proporcionado")
     revoked_tokens_collection.insert_one({"token": token})
