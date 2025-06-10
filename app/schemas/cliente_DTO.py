@@ -3,7 +3,7 @@ from typing import Optional
 import re
 
 class Cliente(BaseModel):
-    id: Optional[int] = None
+    id: Optional[int] = None  # Cambiado a opcional
     nombre: str
     apellidos: str
     ciudad: str
@@ -21,3 +21,22 @@ class Cliente(BaseModel):
         if not any(re.search(pattern, v, re.IGNORECASE) for pattern in allowed_domains):
             raise ValueError('El correo debe ser de dominio gmail.com, outlook.com o hotmail.com')
         return v
+
+class ClienteCreateRequest(BaseModel):
+    cliente: Cliente
+    password: str
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "cliente": {
+                    # "id": 1,  # El id NO debe aparecer en el ejemplo
+                    "nombre": "pepe",
+                    "apellidos": "pepe",
+                    "ciudad": "Bogota",
+                    "saldo": 50000,
+                    "email": "pepe@gmail.com",
+                    "rol": "cliente"
+                },
+                "password": "pepe0000"
+            }
+        }
