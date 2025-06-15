@@ -17,9 +17,9 @@ print("MAIL_FROM:", os.getenv("MAIL_FROM"))
 
 
 conf = ConnectionConfig(
-    MAIL_USERNAME=os.getenv("MAIL_USERNAME", "default_user@example.com"),  
-    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD", "default_password"),     
-    MAIL_FROM=os.getenv("MAIL_FROM", "default_from@example.com"),  
+    MAIL_USERNAME=os.getenv("MAIL_USERNAME", "default_user@example.com"),
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD", "default_password"),
+    MAIL_FROM=os.getenv("MAIL_FROM", "default_from@example.com"),
     MAIL_PORT=587,
     MAIL_SERVER="smtp.gmail.com",
     MAIL_FROM_NAME="Notificación de Fondos",
@@ -72,10 +72,9 @@ async def suscribirse_fondo(transaccion: Transaccion, background_tasks: Backgrou
         raise HTTPException(status_code=400, detail="El cliente no tiene un saldo definido. Por favor, verifique la base de datos.")
     if cliente["saldo"] < producto["monto_minimo"]:
         raise HTTPException(status_code=400, detail=f"No tiene saldo disponible para vincularse al fondo {producto['nombre']}")
-    
+
     nuevo_saldo = cliente["saldo"] - producto["monto_minimo"]
     clientes_collection.update_one({"id": int(transaccion.idCliente)}, {"$set": {"saldo": nuevo_saldo}})
-
 
     inscripcion = {
         "idCliente": int(transaccion.idCliente),
@@ -86,7 +85,6 @@ async def suscribirse_fondo(transaccion: Transaccion, background_tasks: Backgrou
     }
     inscripciones_collection.insert_one(inscripcion)
 
-    
     transaccion_data = {
         "idCliente": int(transaccion.idCliente),
         "idProducto": int(transaccion.idProducto),
@@ -94,23 +92,28 @@ async def suscribirse_fondo(transaccion: Transaccion, background_tasks: Backgrou
         "tipo": "apertura",
         "monto": producto["monto_minimo"]
     }
-    transacciones_collection.insert_one(transaccion_data)  
+    transacciones_collection.insert_one(transaccion_data)
 
-   
-    if cliente["email"]:
+    print(f"DEBUG suscribirse_fondo - cliente recuperado: {cliente}")
+    print(f"DEBUG suscribirse_fondo - claves del cliente: {list(cliente.keys()) if cliente else 'Cliente no encontrado'}")
+    email_cliente = cliente.get("email")
+    if email_cliente:
         background_tasks.add_task(
             enviar_correo,
-            cliente["email"],
+            email_cliente,
             "Suscripción Exitosa",
             f"Te has suscrito exitosamente al fondo {producto['nombre']} con un monto de {producto['monto_minimo']}"
         )
+        notificacion_msg = f"Se ha enviado una notificación al correo {email_cliente} sobre la suscripción."
+    else:
+        notificacion_msg = "No se encontró email para este cliente. No se envió notificación."
+        email_cliente = None
     return {
         "mensaje": f"Suscripción al fondo {producto['nombre']} realizada con éxito",
         "nuevo_saldo": nuevo_saldo,
-        "notificacion": f"Se ha enviado una notificación a {cliente['email']} sobre la suscripción."
+        "email_cliente": email_cliente,
+        "notificacion": notificacion_msg
     }
-
-
 
 
 @router.post("/transacciones/cancelacion/")
@@ -119,17 +122,14 @@ async def cancelar_suscripcion(transaccion: Transaccion, background_tasks: Backg
     if not inscripcion:
         raise HTTPException(status_code=404, detail="El cliente no está suscrito a este fondo")
 
-    
     producto = productos_collection.find_one({"id": int(transaccion.idProducto)})    
     cliente = clientes_collection.find_one({"id": int(transaccion.idCliente)})
 
     nuevo_saldo = cliente["saldo"] + producto["monto_minimo"]
     clientes_collection.update_one({"id": int(transaccion.idCliente)}, {"$set": {"saldo": nuevo_saldo}})
 
-    
     inscripciones_collection.delete_one({"idCliente": int(transaccion.idCliente), "idProducto": int(transaccion.idProducto)})
 
-    
     cancelacion = {
         "idCliente": int(transaccion.idCliente),
         "idProducto": int(transaccion.idProducto),
@@ -139,23 +139,27 @@ async def cancelar_suscripcion(transaccion: Transaccion, background_tasks: Backg
     }
     transacciones_collection.insert_one(cancelacion)
 
-
-    if cliente.get("email"):
+    print(f"DEBUG cancelar_suscripcion - cliente recuperado: {cliente}")
+    email_cliente = cliente.get("email")
+    if email_cliente:
         background_tasks.add_task(
             enviar_correo,
-            cliente["email"],
+            email_cliente,
             "Cancelación de Suscripción",
             f"Has cancelado tu suscripción al fondo {producto['nombre']}."
         )
+        notificacion_msg = f"Se ha enviado una notificación al correo {email_cliente} sobre la cancelación."
+    else:
+        notificacion_msg = "No se encontró email para este cliente. No se envió notificación."
+        email_cliente = None
 
     return {
         "mensaje": f"Cancelación del fondo {producto['nombre']} realizada con éxito",
         "nuevo_saldo": nuevo_saldo,
-        "notificacion": f"Se ha enviado una notificación a {cliente['email']} sobre la cancelación."
+        "email_cliente": email_cliente,
+        "notificacion": notificacion_msg
     }
 
-    
-    
 
 
 @router.get("/transacciones/")
@@ -170,7 +174,7 @@ async def ver_historial_transacciones(tipo: str = None):
             if not transacciones:
                 return {"mensaje": "No se encontraron transacciones registradas."}
 
-        
+
         transacciones_serializadas = [transaccion_serializer(transaccion) for transaccion in transacciones]
         return transacciones_serializadas
 

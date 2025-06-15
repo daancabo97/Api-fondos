@@ -126,7 +126,7 @@ async def actualizar_saldo(id: str, nuevo_saldo: int):
 
 
 @router.post("/login")
-@limiter.limit("5/minute")  # 5 intentos por minuto por IP
+@limiter.limit("5/minute")
 async def login(request: Request, email: str = Body(...), password: str = Body(...)):
     cliente = clientes_collection.find_one({"email": email})
     if not cliente or not verify_password(password, cliente["password"]):
