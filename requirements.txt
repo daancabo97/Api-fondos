@@ -3,5 +3,11 @@ uvicorn
 pymongo
 pydantic
 pytest
+pytest-cov
 slowapi
 httpx
+python-jose[cryptography]
+passlib[bcrypt]
+python-dotenv
+fastapi-mail
+email-validator

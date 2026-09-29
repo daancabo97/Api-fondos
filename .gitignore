@@ -1,8 +1,13 @@
-# Python bytecode files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Logs
-*.log
+.pytest_cache/
+.vscode/
 
+*.log
+*.ruff_cache/
+*.venv/
+*.vscode/
+*.coverage
+*pyproject.toml

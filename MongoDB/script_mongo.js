@@ -15,8 +15,8 @@
 	// Crear colección para Disponibilidad
 	db.createCollection("disponibilidad")
 
-	// Crear colección para Visitan
-	db.createCollection("visitan")
+	// Crear colección para visitas cliente–sucursal
+	db.createCollection("visitas")
 
 	// Crear coleccione para ver el historial de transacciones
 	db.createCollection("transacciones")
@@ -58,8 +58,8 @@
 		  { "idSucursal": 2, "idProducto": 3 }
 		]);
 
-		// Insertar datos en la colección Visitan
-		db.visitan.insertMany([
+		// Insertar datos en la colección visitas
+		db.visitas.insertMany([
 		  { "idSucursal": 1, "idCliente": 1, "fechaVisita": ISODate("2024-10-01T00:00:00Z") },
 		  { "idSucursal": 2, "idCliente": 2, "fechaVisita": ISODate("2024-10-05T00:00:00Z") }
 		]);
@@ -81,11 +81,11 @@
 				db.disponibilidad.find().pretty()
 
 				// Verificar visitas
-				db.visitan.find().pretty()
+				db.visitas.find().pretty()
 
 
 						// Obtener los nombres de los clientes que tienen inscrito algún producto disponible sólo en las sucursales que visitan
-						db.visitan.aggregate([
+						db.visitas.aggregate([
 						  {
 							$lookup: {
 							  from: "disponibilidad",
