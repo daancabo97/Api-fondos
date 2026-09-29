@@ -1,7 +1,7 @@
 """Capa de negocio — autenticación, JWT, contraseñas y reglas RBAC."""
 import re
-from typing import Any
 from datetime import datetime, timedelta
+from typing import Any
 
 from fastapi import HTTPException, status
 from jose import JWTError, jwt
@@ -28,7 +28,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def password_requirements_message() -> str:
     return (
         "La contraseña debe tener al menos 8 caracteres, una mayúscula, "
-        "una minúscula, un número y un carácter especial (*#&_.\-). "
+        "una minúscula, un número y un carácter especial (*#&_.-). "
     )
 
 
@@ -108,33 +108,43 @@ def assert_own_client(user: dict[str, Any], id_cliente: int) -> None:
 
 
 def assert_access_to_client_path(user: dict[str, Any], id_param: str) -> int:
-    """Verifica que el usuario autenticado coincida con el cliente indicado en la URL (acepta ID numérico o ObjectId de Mongo)."""
+    """Devuelve el id numérico si ese usuario puede acceder al cliente de la ruta."""
     if user.get("rol") == "admin":
-        id_cliente = cliente_repository.resolve_id_from_path(id_param)
-        if id_cliente is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Cliente no encontrado",
-            )
-        return id_cliente
+        return _id_de_cliente_existente(id_param)
 
-    token_client_id = get_client_id_from_user(user)
-    if token_client_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No se pudo identificar al cliente en el token",
-        )
-    if id_param.isdigit() and int(id_param) != token_client_id:
+    cliente = _cliente_del_token(user)
+    if not _ruta_es_del_cliente(id_param, cliente, user["user_id"]):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No puede acceder a datos de otro cliente",
         )
-    if not id_param.isdigit() and id_param != user["user_id"]:
+    return int(cliente["id"])
+
+
+def _id_de_cliente_existente(id_param: str) -> int:
+    id_cliente = cliente_repository.resolve_id_from_path(id_param)
+    if id_cliente is None:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No puede acceder a datos de otro cliente",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente no encontrado",
         )
-    return token_client_id
+    return id_cliente
+
+
+def _cliente_del_token(user: dict[str, Any]) -> dict:
+    cliente = cliente_repository.find_by_object_id(user.get("user_id", ""))
+    if not cliente or cliente.get("id") is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cliente no encontrado",
+        )
+    return cliente
+
+
+def _ruta_es_del_cliente(id_param: str, cliente: dict, user_id: str) -> bool:
+    if id_param.isdigit():
+        return int(id_param) == int(cliente["id"])
+    return id_param == user_id
 
 
 def assert_admin(user: dict[str, Any]) -> dict[str, Any]:

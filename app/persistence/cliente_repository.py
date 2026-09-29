@@ -56,11 +56,6 @@ def insert(cliente: dict):
     return _collection.insert_one(cliente)
 
 
-def delete_by_object_id(object_id) -> int:
-    result = _collection.delete_one({"_id": object_id})
-    return result.deleted_count
-
-
 def delete_by_id(id_cliente: int) -> int:
     result = _collection.delete_many({"id": id_cliente})
     return result.deleted_count

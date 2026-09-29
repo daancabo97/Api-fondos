@@ -48,8 +48,8 @@ def registrar_cliente(cliente_data: dict, password: str) -> dict:
     return serialize_cliente(cliente_dict)
 
 
-def obtener_cliente(id_param: str, user: dict[str, Any] | None = None) -> dict:
-    """ obtienel cliente por id o object id """
+def obtener_cliente(id_param: str, user: dict[str, Any]) -> dict:
+    auth_service.assert_access_to_client_path(user, id_param)
     cliente = cliente_repository.find_by_path_id(id_param)
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
@@ -57,11 +57,8 @@ def obtener_cliente(id_param: str, user: dict[str, Any] | None = None) -> dict:
 
 
 def eliminar_cliente(id_param: str, user: dict[str, Any]) -> dict:
-    auth_service.assert_access_to_client_path(user, id_param)
-    cliente = cliente_repository.find_by_path_id(id_param)
-    if not cliente:
-        raise HTTPException(status_code=404, detail="Cliente no encontrado")
-    if cliente_repository.delete_by_object_id(cliente["_id"]) == 0:
+    id_cliente = auth_service.assert_access_to_client_path(user, id_param)
+    if cliente_repository.delete_by_id(id_cliente) == 0:
         raise HTTPException(status_code=404, detail="Cliente no encontrado")
     return {"mensaje": "Cliente eliminado correctamente"}
 

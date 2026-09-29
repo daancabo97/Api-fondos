@@ -1,7 +1,7 @@
 """Capa de presentación - endpoints de clientes."""
 from fastapi import APIRouter, Body, Depends, Request
 
-from app.business import auth_service, cliente_service
+from app.business import cliente_service
 from app.presentation.dependencies.auth_deps import (
     get_current_user,
     require_admin,
@@ -27,13 +27,11 @@ async def crear_cliente(request: ClienteCreateRequest):
 
 @router.get("/clientes/{id}")
 async def obtener_cliente(id: str, user=Depends(require_authenticated)):
-    auth_service.assert_access_to_client_path(user, id)
     return cliente_service.obtener_cliente(id, user)
 
 
 @router.delete("/clientes/{id}")
 async def eliminar_cliente(id: str, user=Depends(require_authenticated)):
-    auth_service.assert_access_to_client_path(user, id)
     return cliente_service.eliminar_cliente(id, user)
 
 
