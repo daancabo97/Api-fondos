@@ -17,7 +17,6 @@ from app.persistence import (
     cliente_repository,
     inscripcion_repository,
     sequence_repository,
-    visita_repository,
 )
 from app.presentation.limiter import limiter
 from app.presentation.routers import (
@@ -35,7 +34,6 @@ load_dotenv()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_production_config()
-    visita_repository.ensure_collection()
     cliente_repository.ensure_indexes()
     inscripcion_repository.ensure_indexes()
     sequence_repository.sync_client_sequence()

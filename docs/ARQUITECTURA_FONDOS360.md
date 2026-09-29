@@ -328,7 +328,6 @@ Los **GET** de productos, sucursales y disponibilidad **no exigen JWT** a propó
 | Disponibilidad GET por ObjectId + PUT actualizar | OK |
 | `ENVIRONMENT=production` + validación `SECRET_KEY` | OK |
 | Transacciones MongoDB nativas con replica set | OK |
-| Colección `visitan` → `visitas` (migración en lifespan) | OK |
 | Test notificación sin contacto en transacciones | OK |
 | SMS vía Twilio (fallback log en dev) | OK |
 
