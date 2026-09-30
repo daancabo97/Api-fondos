@@ -107,7 +107,7 @@ class TestCancelacion:
         )
         assert apertura.status_code == 200
         assert apertura.json()["transaccion_id"] is not None
-        assert "Suscripción al fondo FPV_BTG_PACTUAL_RECAUDADORA" in apertura.json()["mensaje"]
+        assert "Te has suscrito al fondo FPV_BTG_PACTUAL_RECAUDADORA" in apertura.json()["mensaje"]
 
         cancelacion = client.post(
             "/transacciones/cancelacion/",
@@ -141,9 +141,7 @@ class TestNotificacion:
                     "ciudad": "Bogotá",
                     "saldo": 500000,
                     "email": email,
-                    "telefono": "+573001111111",
-                    "canal_notificacion": "email",
-                },
+                    "telefono": "+573001111111",                },
                 "password": "Password123*",
             },
         )
@@ -156,7 +154,7 @@ class TestNotificacion:
 
         cliente_repository._collection.update_one(
             {"email": email},
-            {"$set": {"canal_notificacion": "sms", "telefono": ""}},
+            {"$set": {"telefono": ""}},
         )
 
         body = {"idCliente": id_cliente, "idProducto": 5}
@@ -164,6 +162,7 @@ class TestNotificacion:
         response = client.post("/transacciones/apertura/", json=body, headers=headers)
         assert response.status_code == 200
         notif = response.json()["notificacion"]
+        assert "enviada por email" in notif.lower()
         assert "No se encontró contacto" in notif
         assert "sms" in notif.lower()
 
@@ -186,9 +185,7 @@ class TestHistorial:
                     "ciudad": "Bogotá",
                     "saldo": 100000,
                     "email": email,
-                    "telefono": "+573008888888",
-                    "canal_notificacion": "email",
-                },
+                    "telefono": "+573008888888",                },
                 "password": "Password123*",
             },
         )

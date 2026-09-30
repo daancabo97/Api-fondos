@@ -10,7 +10,6 @@ from passlib.context import CryptContext
 from app.database.config import SECRET_KEY
 from app.persistence import cliente_repository, revoked_token_repository
 
-
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 SPECIAL_CHARS = "*#&_-."

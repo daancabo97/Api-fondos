@@ -7,7 +7,7 @@ Con ella puede:
 1. Suscribirse a un fondo (apertura).
 2. Salirse de un fondo (cancelación). El monto de vinculación vuelve al saldo.
 3. Ver el historial de aperturas y cancelaciones.
-4. Recibir un aviso por email o SMS, según el canal que eligió al registrarse.
+4. Recibir el mismo aviso por email y por SMS al abrir o cancelar un fondo.
 
 Cada transacción tiene un `transaccion_id` propio. El saldo inicial es COP $500.000. Si no alcanza para el monto mínimo del fondo, la API responde: `No tiene saldo disponible para vincularse al fondo <nombre>`.
 
@@ -48,14 +48,13 @@ El catálogo de fondos lo crea un administrador. El rol no viaja en el registro:
     "ciudad": "Bogotá",
     "saldo": 500000,
     "email": "ana@gmail.com",
-    "telefono": "+573001234567",
-    "canal_notificacion": "email"
+    "telefono": "+573001234567"
   },
   "password": "Password123*"
 }
 ```
 
-El correo debe ser de `gmail.com`, `outlook.com` o `hotmail.com`. La contraseña pide al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter de `* # & _ - .`. El teléfono es obligatorio. `canal_notificacion` solo admite `email` o `sms`.
+El correo debe ser de `gmail.com`, `outlook.com` o `hotmail.com`. La contraseña pide al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter de `* # & _ - .`. El teléfono es obligatorio. El aviso de apertura y de cancelación sale por email y por SMS.
 
 2. En MongoDB, asígnale el rol:
 
@@ -87,7 +86,7 @@ db.clientes.updateOne({ email: "ana@gmail.com" }, { $set: { rol: "admin" } })
 - **GET /transacciones/** para el historial de ese cliente
 - **POST /transacciones/cancelacion/** con el mismo cuerpo para desvincularse
 
-La apertura responde `transaccion_id`, `nuevo_saldo` y `notificacion`.
+La apertura y la cancelación responden `transaccion_id`, `mensaje`, `nuevo_saldo` y `notificacion`. El `mensaje` es el mismo texto del correo y del SMS. El asunto del correo es `Suscripción Exitosa` o `Cancelación de Suscripción`.
 
 ## Quién puede hacer qué
 
@@ -102,7 +101,7 @@ Consultar productos, sucursales y disponibilidad no exige token. Crearlos o borr
 
 ## Notificaciones
 
-Tras una apertura o una cancelación, la API avisa en segundo plano por el canal del cliente.
+Tras una apertura o una cancelación, la API envía el aviso por email y por SMS antes de responder. El texto de la respuesta es el mismo que llega al cliente. Si falta el correo o el teléfono, ese canal no sale.
 
 - **Email:** configura `MAIL_USERNAME`, `MAIL_PASSWORD` y `MAIL_FROM`. En Gmail hace falta una contraseña de aplicación.
 - **SMS:** Twilio envía el mensaje si existen `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` y `TWILIO_FROM_NUMBER`. Sin esas variables el SMS queda en el log, no sale al teléfono.
@@ -120,7 +119,13 @@ Tras una apertura o una cancelación, la API avisa en segundo plano por el canal
 
 Con `ENVIRONMENT=production` la API no arranca si `SECRET_KEY` sigue siendo el valor de desarrollo.
 
-En MongoDB standalone el débito del saldo es atómico (`$inc`) y, si falla la inscripción o el registro, se revierte. Si el cluster es un replica set, apertura y cancelación usan una transacción multi-documento.
+En MongoDB standalone el débito del saldo es atómico (`$inc`) y, si falla la inscripción o el registro, se revierte a mano. Si el proceso se cae entre el cobro y ese deshacer, el saldo puede quedar inconsistente. Para que Mongo revierta saldo, inscripción y transacción juntos, el proceso local tiene que ser un replica set:
+
+```text
+mongod --replSet rs0 --port 27017 --dbpath <ruta-de-datos>
+```
+
+Y una vez, en mongosh: `rs.initiate()`. Con eso apertura y cancelación usan una transacción multi-documento.
 
 ## Arquitectura
 
@@ -137,12 +142,18 @@ El detalle está en `docs/ARQUITECTURA_FONDOS360.md`. La consulta SQL de la part
 
 ## Pruebas
 
-Los tests usan la base `BTG_test`, separada de `BTG`.
+Los tests usan la base `BTG_test`, separada de `BTG`. Activa el entorno antes: `.venv\Scripts\activate`.
 
 ```bash
-pytest test/ -q
 ruff check app test
-pytest test/ -q --cov=app --cov-fail-under=90
+pytest test/ -q
+pytest test/ -q --cov=app --cov-fail-under=90 --cov-report=term-missing
+```
+
+El correo no sale: `test/business/services/test_notificaciones.py` sustituye `FastMail.send_message` y guarda asunto, destinatario y cuerpo. El SMS de esas pruebas no llama a Twilio.
+
+```bash
+pytest test/business/services/test_notificaciones_service.py test/business/services/test_transaccion_service.py::TestNotificacionDeFondo -q
 ```
 
 GitHub Actions ejecuta ruff y pytest con cobertura mínima del 90 % en cada push o pull request a `main` o `master`.

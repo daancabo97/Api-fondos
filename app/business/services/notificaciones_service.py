@@ -1,7 +1,6 @@
 """Capa de negocio — notificaciones por email o SMS."""
 import logging
 import os
-from typing import Literal
 
 import httpx
 from dotenv import load_dotenv
@@ -10,8 +9,6 @@ from fastapi_mail import ConnectionConfig, FastMail, MessageSchema
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-
-CanalNotificacion = Literal["email", "sms"]
 
 _mail_conf = ConnectionConfig(
     MAIL_USERNAME=os.getenv("MAIL_USERNAME", "default_user@example.com"),
@@ -27,16 +24,6 @@ _mail_conf = ConnectionConfig(
 )
 
 
-async def _enviar_email(destinatario: str, asunto: str, mensaje: str) -> None:
-    mensaje_schema = MessageSchema(
-        subject=asunto,
-        recipients=[destinatario],
-        body=mensaje,
-        subtype="html",
-    )
-    await FastMail(_mail_conf).send_message(mensaje_schema)
-
-
 def _twilio_configurado() -> bool:
     return bool(
         os.getenv("TWILIO_ACCOUNT_SID")
@@ -45,48 +32,43 @@ def _twilio_configurado() -> bool:
     )
 
 
-def _enviar_sms_twilio(destinatario: str, mensaje: str) -> None:
+async def _enviar_sms_twilio(destinatario: str, mensaje: str) -> None:
     account_sid = os.getenv("TWILIO_ACCOUNT_SID")
     auth_token = os.getenv("TWILIO_AUTH_TOKEN")
     from_number = os.getenv("TWILIO_FROM_NUMBER")
     url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
-    response = httpx.post(
-        url,
-        data={"To": destinatario, "From": from_number, "Body": mensaje},
-        auth=(account_sid, auth_token),
-        timeout=15.0,
-    )
-    response.raise_for_status()
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        response = await client.post(
+            url,
+            data={"To": destinatario, "From": from_number, "Body": mensaje},
+            auth=(account_sid, auth_token),
+        )
+        response.raise_for_status()
 
 
-def _enviar_sms(destinatario: str, mensaje: str) -> None:
-    if _twilio_configurado():
-        _enviar_sms_twilio(destinatario, mensaje)
+async def notificar_por_email(evento: dict) -> None:
+    """Observador de email. Envía si el evento trae correo."""
+    destinatario = str(evento.get("email") or "").strip()
+    if not destinatario:
         return
-    logger.info("[SMS simulado] -> %s: %s", destinatario, mensaje)
+    mensaje_schema = MessageSchema(
+        subject=evento["asunto"],
+        recipients=[destinatario],
+        body=evento["mensaje"],
+        subtype="html",
+    )
+    await FastMail(_mail_conf).send_message(mensaje_schema)
+    return "enviado"
 
 
-async def enviar_notificacion(
-    canal: CanalNotificacion,
-    destinatario: str,
-    asunto: str,
-    mensaje: str,
-) -> str:
-    if canal == "email":
-        await _enviar_email(destinatario, asunto, mensaje)
-        return f"Notificación enviada por email a {destinatario}"
-    _enviar_sms(destinatario, mensaje)
+async def notificar_por_sms(evento: dict) -> None:
+    """Observador de SMS. Envía si el evento trae teléfono."""
+    destinatario = str(evento.get("telefono") or "").strip()
+    if not destinatario:
+        return
+    mensaje = evento["mensaje"]
     if _twilio_configurado():
-        return f"Notificación enviada por SMS (Twilio) a {destinatario}"
-    return f"Notificación registrada por SMS (simulado) a {destinatario}"
-
-
-def obtener_canal_contacto_notificacion(
-    cliente: dict,
-) -> tuple[CanalNotificacion | None, str | None]:
-    canal = cliente.get("canal_notificacion", "email")
-    if canal == "sms":
-        telefono = cliente.get("telefono")
-        return ("sms", telefono) if telefono else (None, None)
-    email = cliente.get("email")
-    return ("email", email) if email else (None, None)
+        await _enviar_sms_twilio(destinatario, mensaje)
+        return "enviado"
+    logger.info("[SMS simulado] -> %s: %s", destinatario, mensaje)
+    return "simulado"

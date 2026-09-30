@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI):
     validate_production_config()
     cliente_repository.ensure_indexes()
     inscripcion_repository.ensure_indexes()
-    sequence_repository.sync_client_sequence()
+    sequence_repository.sync_client_id_sequence()
     yield
 
 

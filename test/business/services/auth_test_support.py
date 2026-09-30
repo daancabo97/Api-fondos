@@ -38,9 +38,7 @@ def ensure_admin_user() -> None:
             "email": ADMIN_EMAIL,
             "rol": "admin",
             "password": auth_service.get_password_hash(PASSWORD),
-            "telefono": "+573009999999",
-            "canal_notificacion": "email",
-            "id": cliente_id,
+            "telefono": "+573009999999",            "id": cliente_id,
         },
     )
 
@@ -65,9 +63,7 @@ def cliente_user() -> dict:
                     "ciudad": "Bogotá",
                     "saldo": 500000,
                     "email": CLIENTE_EMAIL,
-                    "telefono": "+573001234567",
-                    "canal_notificacion": "email",
-                },
+                    "telefono": "+573001234567",                },
                 "password": PASSWORD,
             },
         )

@@ -1,20 +1,16 @@
 """Capa de persistencia  acceso a la colección inscripciones."""
-from pymongo.errors import OperationFailure
-
 from app.database.connection import db
 
 _collection = db["inscripciones"]
 
 
 def ensure_indexes() -> None:
-    try:
-        _collection.create_index(
-            [("idCliente", 1), ("idProducto", 1)],
-            unique=True,
-            name="uniq_inscripcion_cliente_producto",
-        )
-    except OperationFailure:
-        pass
+    """Índice único cliente+fondo. Si no se crea, el arranque debe fallar."""
+    _collection.create_index(
+        [("idCliente", 1), ("idProducto", 1)],
+        unique=True,
+        name="uniq_inscripcion_cliente_producto",
+    )
 
 
 def find_one(id_cliente: int, id_producto: int) -> dict | None:

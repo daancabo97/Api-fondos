@@ -66,7 +66,7 @@ presentation → business → persistence → database
 
 ### Doble identificador en MongoDB
 
-Los **clientes** usan dos IDs: `ObjectId` de MongoDB (`_id`) e `id` entero secuencial vía colección `counters` (`get_next_sequence`). Esto facilita APIs amigables pero añade complejidad en búsquedas y consistencia.
+Los **clientes** usan dos IDs: `ObjectId` de MongoDB (`_id`) e `id` entero secuencial vía colección `counters` (`get_next_sequence_id_db`). Esto facilita APIs amigables pero añade complejidad en búsquedas y consistencia.
 
 ---
 
@@ -112,7 +112,7 @@ flowchart TB
     R_DIS --> OTROS
     R_VIS --> OTROS
     R_TRX --> TRX
-    R_TRX --> NOTIF
+    TRX --> NOTIF
     AUTH --> REPOS
     CLI --> REPOS
     PRO --> REPOS
@@ -131,7 +131,6 @@ sequenceDiagram
     participant API as POST /transacciones/apertura/
     participant TRX as transaccion_service
     participant DB as Repositorios MongoDB
-    participant BG as BackgroundTasks
     participant NOTIF as notificaciones_service
 
     C->>API: Transaccion(idCliente, idProducto)
@@ -147,11 +146,13 @@ sequenceDiagram
         TRX->>DB: descontar_saldo
         TRX->>DB: insert inscripción
         TRX->>DB: insert transacción
-        API->>BG: enviar_notificacion
-        BG->>NOTIF: email SMTP o SMS Twilio
-        API-->>C: 200 + transaccion_id + nuevo_saldo
+        TRX->>NOTIF: email y SMS en paralelo
+        NOTIF-->>TRX: resultado de cada canal
+        API-->>C: 200 mensaje, saldo y resultado del aviso
     end
 ```
+
+El `mensaje` de la respuesta es el cuerpo del correo y del SMS. El asunto del correo es `Suscripción Exitosa` o, en la cancelación, `Cancelación de Suscripción`. El aviso se envía antes de responder. Si falta el contacto de un canal, ese canal no sale.
 
 ### 3.3 Flujo de autenticación
 
@@ -191,7 +192,7 @@ flowchart LR
         T2[Debitar saldo del cliente]
         T3[Registrar inscripción]
         T4[Registrar transacción tipo apertura]
-        T5[Enviar notificación email o SMS]
+        T5[Enviar notificacion email y SMS en paralelo]
         EndOK((Fin exitoso))
         EndErr((Fin con error))
 
@@ -220,10 +221,10 @@ flowchart LR
 | **Tarea** Descontar saldo | `cliente_repository.descontar_saldo` |
 | **Tarea** Inscripción | `inscripcion_repository.insert` |
 | **Tarea** Auditoría | `transaccion_repository.insert` |
-| **Tarea** Notificar | `background_tasks.add_task(enviar_notificacion)` |
-| **Evento fin** | JSON con `mensaje`, `nuevo_saldo` |
+| **Tarea** Notificar | `_post_event_notification` llama a email y SMS antes de responder |
+| **Evento fin** | JSON con `transaccion_id`, `mensaje`, `nuevo_saldo`, `notificacion` |
 
-**Nota:** En standalone MongoDB se usa débito atómico + rollback compensatorio; replica set permite transacciones multi-documento nativas.
+**Nota:** Sin replica set, `_rollback_if_no_mongo_session` deshace a mano el saldo y la inscripción ya escritos. Con replica set, Mongo revierte la sesión y ese deshacer no corre.
 
 ---
 
@@ -238,7 +239,7 @@ Esta sección describe **evolución posible** del proyecto. Lo ya implementado a
 | **`TransaccionService` en business** | ✅ | Lógica fuera de routers |
 | **Repositorios por colección** | ✅ | PyMongo desacoplado de HTTP |
 | **Unit of Work / transacciones MongoDB** | ✅ | Dev: rollback compensatorio; prod: `with_transaction` auto |
-| **Domain events** | Pendiente | `FondoSuscrito`, `FondoCancelado` para notificaciones desacopladas |
+| **Observer email y SMS** | ✅ | El mismo evento llega a los dos canales antes de la respuesta |
 
 ### 5.2 Capa de presentación
 
@@ -328,8 +329,8 @@ Los **GET** de productos, sucursales y disponibilidad **no exigen JWT** a propó
 | Disponibilidad GET por ObjectId + PUT actualizar | OK |
 | `ENVIRONMENT=production` + validación `SECRET_KEY` | OK |
 | Transacciones MongoDB nativas con replica set | OK |
-| Test notificación sin contacto en transacciones | OK |
-| SMS vía Twilio (fallback log en dev) | OK |
+| Aviso por email y SMS antes de la respuesta, mismo `mensaje` | OK |
+| SMS vía Twilio; sin credenciales queda simulado en el log | OK |
 
 ---
 

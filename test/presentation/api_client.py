@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-import test.database.test_env
+import test.database.test_env  # noqa: F401  — fija DATABASE_NAME antes de importar app
 from app.main import app
 
 _test_client: TestClient | None = None

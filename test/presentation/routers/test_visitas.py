@@ -79,9 +79,7 @@ class TestVisitas:
                     "ciudad": "Bogotá",
                     "saldo": 100000,
                     "email": email,
-                    "telefono": "+573004444444",
-                    "canal_notificacion": "email",
-                },
+                    "telefono": "+573004444444",                },
                 "password": "Password123*",
             },
         )

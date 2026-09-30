@@ -1,7 +1,7 @@
 import re
-from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
+
 
 class ClienteRegistro(BaseModel):
     nombre: str
@@ -15,7 +15,6 @@ class ClienteRegistro(BaseModel):
         description="Teléfono de contacto",
         examples=["+573001234567"],
     )
-    canal_notificacion: Literal["email", "sms"] = "email"
 
     @field_validator("telefono")
     @classmethod
@@ -54,7 +53,6 @@ class ClienteCreateRequest(BaseModel):
                     "saldo": 500000,
                     "email": "juan@gmail.com",
                     "telefono": "+573001234567",
-                    "canal_notificacion": "email",
                 },
                 "password": "Password123*",
             }

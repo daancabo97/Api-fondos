@@ -18,8 +18,9 @@ def mongo_supports_transactions() -> bool:
 
 def run_in_transaction(callback: Callable[[Any], T]) -> T:
     """
-    Ejecuta callback(session) dentro de with_transaction si el cluster lo permite.
-    En standalone dev, callback recibe session=None y el caller usa rollback manual.
+    Mete saldo, inscripción y transacción en una sesión de Mongo
+    cuando el cluster lo permite. Si no hay sesión,
+    _rollback_if_no_mongo_session deshace a mano lo ya escrito.
     """
     if not mongo_supports_transactions():
         return callback(None)

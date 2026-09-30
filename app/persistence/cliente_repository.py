@@ -1,7 +1,6 @@
 """Capa de persistencia - acceso a la colección clientes."""
 from bson import ObjectId
 from pymongo import ReturnDocument
-from pymongo.errors import OperationFailure
 
 from app.database.connection import db
 
@@ -9,12 +8,9 @@ _collection = db["clientes"]
 
 
 def ensure_indexes() -> None:
-    """Índices únicos: email e id (evita colisiones en GET /clientes/{id})."""
-    try:
-        _collection.create_index("id", unique=True, name="uniq_cliente_id")
-        _collection.create_index("email", unique=True, name="uniq_cliente_email")
-    except OperationFailure:
-        pass
+    """Índices únicos: email e id. Si no se crean, el arranque debe fallar."""
+    _collection.create_index("id", unique=True, name="uniq_cliente_id")
+    _collection.create_index("email", unique=True, name="uniq_cliente_email")
 
 
 def find_all() -> list[dict]:
@@ -94,9 +90,10 @@ def descontar_saldo(id_cliente: int, monto: int, session=None) -> dict | None:
 
 
 def depositar_saldo(id_cliente: int, monto: int, session=None) -> dict | None:
-    """Suma el monto de vinculación al saldo del cliente.
-        - Cancelación: devolución por salida del fondo.
-        - Fallo de suscripción: devolución si el cobro se realizó antes de fallar la inscripción/registro.
+    """Suma el monto al saldo.
+
+    En una cancelación devuelve el dinero del fondo. Si la apertura cobró
+    y después falló la inscripción o la transacción, devuelve ese cobro.
     """
     kwargs = {"session": session} if session is not None else {}
     return _collection.find_one_and_update(

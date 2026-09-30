@@ -2,6 +2,7 @@
 import uuid
 from unittest.mock import patch
 
+import pytest
 from pymongo.errors import OperationFailure
 
 from app.persistence import cliente_repository
@@ -10,13 +11,14 @@ from test.presentation.api_client import api_client
 
 
 class TestEnsureIndexes:
-    def test_operation_failure_no_propaga(self):
+    def test_operation_failure_propaga(self):
         with patch.object(
             cliente_repository._collection,
             "create_index",
             side_effect=OperationFailure("idx exists"),
         ):
-            cliente_repository.ensure_indexes()
+            with pytest.raises(OperationFailure):
+                cliente_repository.ensure_indexes()
 
 
 class TestFindByPathId:
@@ -53,9 +55,7 @@ class TestUpdateSaldoById:
                     "ciudad": "Bogotá",
                     "saldo": 100000,
                     "email": email,
-                    "telefono": "+573006666666",
-                    "canal_notificacion": "email",
-                },
+                    "telefono": "+573006666666",                },
                 "password": "Password123*",
             },
         )

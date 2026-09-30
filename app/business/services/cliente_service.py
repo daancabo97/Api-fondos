@@ -8,7 +8,7 @@ from app.persistence import cliente_repository, sequence_repository
 
 
 def serialize_cliente(cliente: dict) -> dict:
-    """Respuesta API: incluye rol, canal y teléfono. Omite password."""
+    """Respuesta API: incluye rol y teléfono. Omite password."""
     return {
         "id": cliente.get("id"),
         "object_id": str(cliente["_id"]) if "_id" in cliente else None,
@@ -18,7 +18,6 @@ def serialize_cliente(cliente: dict) -> dict:
         "saldo": cliente.get("saldo"),
         "email": cliente.get("email"),
         "rol": cliente.get("rol", "cliente"),
-        "canal_notificacion": cliente.get("canal_notificacion", "email"),
         "telefono": cliente.get("telefono", ""),
     }
 
